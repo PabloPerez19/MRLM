@@ -1,0 +1,260 @@
+---
+header-includes:
+- \usepackage{longtable}
+- \usepackage[utf8]{inputenc}
+- \usepackage[spanish]{babel}\decimalpoint
+- \setlength{\parindent}{1.25cm}
+- \usepackage{amsmath}
+output: 
+  pdf_document:
+    number_sections: true
+fontsize: 12pt
+papersize: letter
+geometry: margin = 1in
+language: "es"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(knitr)
+library(kableExtra)
+library(GGally)
+library(rsm)
+library(car)
+
+ggplot2::theme_set(ggplot2::theme_bw()) 
+```
+
+\input{titlepage}
+\thispagestyle{empty}
+\tableofcontents
+\listoffigures
+\listoftables
+
+\newpage
+
+\pagestyle{myheadings}
+\setcounter{page}{1}
+
+Se realizará una análisis de regresión lineal múltiple(RLM): 
+
+$$y_i = \beta_0 + \beta_{1i} x_1 + \beta_2 x_{2i} + \cdots + \beta_k x_{ki} + \varepsilon_i, \ \varepsilon {\stackrel{iid} \sim} N(0, \sigma^2)$$
+
+Con la intencion de validar si dicho modelo es adecuado para
+```{r, echo = F}
+data <- read.csv("AdmissionPredict.csv", sep=",", dec=".")
+data <- data[1:100, -c(1,4,8)]
+y <- select(data, Chance.of.Admit)
+x <- select(data, -c(Chance.of.Admit))
+```
+
+\section{Base de datos}
+\subsection{Breve Descripción de los Datos}
+
+La base de datos corresponden al puntaje de admision de estudiantes de posgrados pertenecientes a universidades de la India. 
+Cuenta con 400 observaciones y 9 variables. De las cuales vamos a analizar un total de 100 estudiantes y 6 variables de interes. 
+
+|**Variables**|**Descripción**|
+|-----------|-------------| 
+|**Chance.of.Admit:**| Posibilidad de ser admitido.|
+|**GRE Score:**      |Examen que tiene como finalidad medir la capacidad de razonamiento verbal, razonamiento cuantitativo, y habilidades para pensar y escribir de forma analítica.|
+|**TOEFL Score:**    |Prueba estandarizada de dominio del idioma inglés.|
+|**SOP:**            |Ensayo de admisión o solicitud de postgrado.|
+|**LOR:**            |Carta de recomendación.|
+|**CGPA:**           |Promedio general acumulado en el pregrado.| 
+
+\section{Análisis descriptivo}
+\subsection{Grafico de dispersión con Matriz de Correlaciones}
+
+```{r, echo = F}
+#Matriz de dispersión con histogramas en la diagonal
+gg2<-ggpairs(data,upper=list(continuous = wrap("smooth",alpha = 0.3, size=1.2,method = "lm")),lower=list(continuous ="cor"))
+for(i in 1:ncol(data)){
+gg2[i,i]<-gg2[i,i]+
+geom_histogram(breaks=hist(data[,i],breaks = "FD",plot=F)$breaks,
+               colour = "red",fill="lightgoldenrod1")
+}
+
+gg2
+```
+
+
+\section{Modelo Ajustado de Regresion Lineal Multiple(MRLM)}
+```{r, echo = F}
+model = lm(data$Chance.of.Admit~., data)
+```
+\subsection{Tabla de parámetros ajustados}
+```{r, echo = F}
+tabla.coef <- summary(model)$coefficients 
+row.names(tabla.coef) <- c("$\\beta_0$", "$\\beta_1$", "$\\beta_2$", "$\\beta_3$", "$\\beta_4$", "$\\beta_5$")
+tabla.coef %>%
+  kable(row.names = T, escape = F,
+        col.names = c("Estimación", "Error estándar", "$T_0$", "Valor P"),
+        align = "c", caption = "Resumen de los coeficientes", booktab = T, digits = 4) %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+\subsection{Ecuación Ajustada}
+Con base en la tabla de parámetros estimados se obtiene la ecuación de regresión ajustada:
+
+
+$$\widehat{Y}_i = \widehat{\beta}_0 + \widehat{\beta}_1X_{i1} + \widehat{\beta}_2X_{i2} + \cdots+ \widehat{\beta}_5X_{i5}, \quad i = 1, 2, \ldots, 100$$
+
+$$\widehat{Y}_i = -1.7723 + 0.0041X_{i1} + 0.0029X_{i2} - 0.0120X_{i3} + 0.0428X_{i4} + 0.0757X_{i5}, \quad i = 1, 2, \ldots, 100$$
+
+\subsection{Tabla Anova}
+```{r, echo = F}
+kable(anova(rsm(Chance.of.Admit~FO(GRE.Score,TOEFL.Score,SOP,LOR,CGPA), data = data)), caption = 'Tabla ANOVA para el modelo')
+```
+\subsection{Prueba de significancia del Modelo}
+$$
+\begin{cases}
+\begin{aligned}
+H_0&: \beta_1  = \cdots = \beta_5 = 0 \\
+H_1&: \text{Al menos un } \beta_j \neq 0
+\end{aligned}
+\end{cases}
+$$
+\subsection{Coeficiente de determinación}
+$$R^2 = \frac{\text{SSR}}{\text{SST}} = 1 - \frac{\text{SSE}}{\text{SST}}$$
+
+$$R^2 = \frac{2.3674478}{2.3674478+0.6744272} = `r 2.3674478/(2.3674478+0.6744272)`$$
+
+\section{Coeficientes de regresión estandarizados}
+```{r, echo = F}
+#CREANDO FUNCION PARA EXTRAER COEFICIENTES ESTIMADOS SUS IC DEL 95, VIF'S Y
+#COEFICIENTES ESTANDARIZADOS
+miscoeficientes <- function (modelo,datos){
+  coefi <- coef (modelo)
+  datos2 <- as.data.frame (scale(datos))
+  coef.std=c(0, coef (lm(update (formula(modelo),~.+0),datos2)))
+  limites=confint (modelo,level=0.95)
+  vifs=c (0,vif (modelo))
+  resul=data.frame (Estimación=coefi,Limites=limites,Vif=vifs,Coef.Std=coef.std)
+  cat("Coeficientes estimados, sus I.C, Vifs y Coeficientes estimados estandarizados","\n")
+  resul
+}
+
+#Obtencion de tabla de coeficientes
+kable(miscoeficientes (model,data))
+```
+
+
+\section{Significancia individual de los parámetros del modelo}
+\subsection{Tabla de la significancia individual de los parámetros}
+```{r, echo = F}
+tabla.coef <- summary(model)$coefficients 
+row.names(tabla.coef) <- c("$\\beta_0$", "$\\beta_1$", "$\\beta_2$", "$\\beta_3$", "$\\beta_4$", "$\\beta_5$")
+tabla.coef %>%
+  kable(row.names = T, escape = F,
+        col.names = c("Estimación", "Error estándar", "$T_0$", "Valor P"),
+        align = "c", caption = "Resumen de los coeficientes", booktab = T, digits = 4) %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+\subsection{Pruebas de hipotesis}
+$$
+\begin{cases}
+\begin{aligned}
+H_0&: \beta_1   = 0 \\
+H_1&: \beta_1 \neq 0
+\end{aligned}
+\end{cases}
+$$
+$$
+\begin{cases}
+\begin{aligned}
+H_0&: \beta_2   = 0 \\
+H_1&: \beta_2 \neq 0
+\end{aligned}
+\end{cases}
+$$
+$$
+\begin{cases}
+\begin{aligned}
+H_0&: \beta_3   = 0 \\
+H_1&: \beta_3 \neq 0
+\end{aligned}
+\end{cases}
+$$
+$$
+\begin{cases}
+\begin{aligned}
+H_0&: \beta_4   = 0 \\
+H_1&: \beta_4 \neq 0
+\end{aligned}
+\end{cases}
+$$
+$$
+\begin{cases}
+\begin{aligned}
+H_0&: \beta_5   = 0 \\
+H_1&: \beta_5 \neq 0
+\end{aligned}
+\end{cases}
+$$
+\section{Ejercicio6}
+\section{Ejercicio7}
+\section{Residuales estudentizados vs. Valores ajustados}
+\subsection{Gráfico de los residuales estudentizados vs. Valores ajustados}
+```{r, echo = F}
+residualPlots(model,tests=FALSE,type="rstudent",quadratic=FALSE,col=2,cex=1.5)
+```
+
+
+\section{Prueba de normalidad para los residuales estudentizados}
+\subsection{Gráfico q-norm residuales estudentizados}
+```{r, echo = F}
+test=shapiro.test(rstudent(model))
+qqnorm(rstudent(model),cex=2)
+qqline(rstudent(model),col=2)
+legend("topleft",legend=rbind(c("Statistic W","p.value"),round(c(test$statistic,test$p.value),digits=5)),cex=0.4)
+```
+
+\section{Diagnostico sobre la presencia de observaciones atipicas, de balanceo y/o influenciales}
+
+```{r, echo = F}
+influence.measures(model)
+influence.measures(model)$is.inf
+# influencias: 10-11-32-37-53-65-66-92
+```
+
+\section{Ejercicio11}
+```{r, echo = F}
+AdmissionPredict_sin_influencias <- data %>% slice(-c(10, 11, 32, 37, 53, 65, 66, 92)) 
+
+modelo_sin_influencias <- lm(Chance.of.Admit~.,data = AdmissionPredict_sin_influencias)
+anova(rsm(Chance.of.Admit~FO(GRE.Score,TOEFL.Score,SOP,LOR,CGPA), data = AdmissionPredict_sin_influencias))
+summary(modelo_sin_influencias)
+
+residualPlots(modelo_sin_influencias,tests=FALSE,type="rstudent",quadratic=FALSE,col=2,cex=1.5)
+
+test_sin_influencias = shapiro.test(rstudent(modelo_sin_influencias)) #Test de normalidad sobre residuales estudentizados
+qqnorm(rstudent(modelo_sin_influencias),cex=2)
+qqline(rstudent(modelo_sin_influencias),col=2)
+legend("topleft",legend=rbind(c("Statistic W","p.value"),round(c(test_sin_influencias$statistic,test_sin_influencias$p.value),digits=5)),cex=0.4)
+
+```
+\section{Ejercicio 12}
+```{r, echo = F}
+#a.
+cor(data)
+
+#b.
+vif(model)
+
+#c.
+#colldiag(model)
+
+# sin observaciones de balanceo
+#a.
+cor(AdmissionPredict_sin_influencias)
+
+#b.
+vif(modelo_sin_influencias)
+
+#c.
+#colldiag(modelo_sin_influencias)
+```
+
+\section{Ejericio13}
+\section{Selección del modelo}
