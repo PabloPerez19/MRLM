@@ -50,10 +50,10 @@ x <- select(data, -c(Chance.of.Admit))
 ```
 
 \section{Base de datos}
-\subsection{Breve Descripción de los Datos}
+\subsection{Breve Descripción de los Datos contextualizando el problema y explicando cada una de las variables involucradas en el modelo.}
 
-La base de datos corresponden al puntaje de admision de estudiantes de posgrados pertenecientes a universidades de la India. 
-Cuenta con 400 observaciones y 9 variables. De las cuales vamos a analizar un total de 100 estudiantes y 6 variables de interes. 
+La base de datos disponible en Kaggle corresponde a puntajes de admision creados para la predicción de las admisiones de posgrado en La India. 
+Cuenta con 400 observaciones y 9 variables. De las cuales se consideran los primeros 100 estudiantes y 6 variables de interes por indicación de la docente.
 
 |**Variables**|**Descripción**|
 |-----------|-------------| 
@@ -64,8 +64,14 @@ Cuenta con 400 observaciones y 9 variables. De las cuales vamos a analizar un to
 |**LOR:**            |Carta de recomendación.|
 |**CGPA:**           |Promedio general acumulado en el pregrado.| 
 
+|**No se consideran**| **Descripción**|
+|-----------|-------------| 
+|**Serial No.**| Numero de serial que identifica a cada estudiante|
+|**University Rating** | Calificación universitaria|
+|**Research Experience**| Si tiene experiencia en investigación o no|
+
 \section{Análisis descriptivo}
-\subsection{Grafico de dispersión con Matriz de Correlaciones}
+\subsection{Grafico de dispersión con Matriz de Correlaciones y conclusiones}
 
 ```{r, echo = F}
 #Matriz de dispersión con histogramas en la diagonal
@@ -83,6 +89,7 @@ gg2
 \section{Modelo Ajustado de Regresion Lineal Multiple(MRLM)}
 ```{r, echo = F}
 model = lm(data$Chance.of.Admit~., data)
+summary(model) #¿ésto no debe incluirse?
 ```
 \subsection{Tabla de parámetros ajustados}
 ```{r, echo = F}
@@ -115,12 +122,17 @@ H_1&: \text{Al menos un } \beta_j \neq 0
 \end{aligned}
 \end{cases}
 $$
-\subsection{Coeficiente de determinación}
+\subsection{Coeficiente de determinación $R^2$: proporción de la variabilidad total de la respuesta explicada por el modelo y opiniones al respecto}
 $$R^2 = \frac{\text{SSR}}{\text{SST}} = 1 - \frac{\text{SSE}}{\text{SST}}$$
-
 $$R^2 = \frac{2.3674478}{2.3674478+0.6744272} = `r 2.3674478/(2.3674478+0.6744272)`$$
 
+```{r, echo = F}
+kable(summary(model)$r.squared, caption = "Multiple R-squared")
+```
+
 \section{Coeficientes de regresión estandarizados}
+Calcule los coeficientes de regresión estandarizados y concluya acerca de cuál de las variables aporta máss a la respuesta según la magnitud en valor absoluto de tales coeficientes (cuidado, no confunda esto con la significancia de los coeficientes de regresión)
+
 ```{r, echo = F}
 #CREANDO FUNCION PARA EXTRAER COEFICIENTES ESTIMADOS SUS IC DEL 95, VIF'S Y
 #COEFICIENTES ESTANDARIZADOS
@@ -141,6 +153,7 @@ kable(miscoeficientes (model,data))
 
 
 \section{Significancia individual de los parámetros del modelo}
+Pruebe la significancia individual de cada uno de los parámetros del modelo (excepto intercepto), usando la prueba t. Establezca claramente la prueba de hipótesis y el criterio de decisión.
 \subsection{Tabla de la significancia individual de los parámetros}
 ```{r, echo = F}
 tabla.coef <- summary(model)$coefficients 
@@ -152,6 +165,7 @@ tabla.coef %>%
   kable_styling(latex_options = "HOLD_position")
 ```
 \subsection{Pruebas de hipotesis}
+
 $$
 \begin{cases}
 \begin{aligned}
@@ -193,15 +207,24 @@ H_1&: \beta_5 \neq 0
 \end{cases}
 $$
 \section{Ejercicio6}
+Teniendo en cuenta los resultados anteriores, realice una prueba con sumas de cuadrados extras con test lineal general; especifique claramente el modelo reducido y completo, estadístico de la prueba, su distribución, cálculo de valor P, decisión y conclusión a la luz de los datos. Justifique la hipótesis que desea probar en este numeral.
+
 \section{Ejercicio7}
+
+Calcule las sumas de cuadrados tipo I (secuenciales) y tipo II (parciales) ¿Cuál de las variables tienen menor valor en tales sumas? ¿Qué puede significar ello?
+
 \section{Residuales estudentizados vs. Valores ajustados}
+
+Construya y analice gráficos de los residuales estudentizados vs. Valores ajustados y contra las variables de regresión utilizadas. ¿Qué información proporcionan estas gráficas?
 \subsection{Gráfico de los residuales estudentizados vs. Valores ajustados}
+Construya una gráfica de probabilidad normal para los residuales estudentizados. ¿Existen razones para dudar de la hipótesis de normalidad sobre los errores en este modelo?
+
 ```{r, echo = F}
 residualPlots(model,tests=FALSE,type="rstudent",quadratic=FALSE,col=2,cex=1.5)
 ```
 
-
 \section{Prueba de normalidad para los residuales estudentizados}
+Construya una gráfica de probabilidad normal para los residuales estudentizados. ¿Existen razones para dudar de la hipótesis de normalidad sobre los errores en este modelo?
 \subsection{Gráfico q-norm residuales estudentizados}
 ```{r, echo = F}
 test=shapiro.test(rstudent(model))
@@ -210,7 +233,7 @@ qqline(rstudent(model),col=2)
 legend("topleft",legend=rbind(c("Statistic W","p.value"),round(c(test$statistic,test$p.value),digits=5)),cex=0.4)
 ```
 
-\section{Diagnostico sobre la presencia de observaciones atipicas, de balanceo y/o influenciales}
+\section{Diagnostico sobre la presencia de observaciones atipicas, de balanceo y/o influenciales y conclusiones}
 
 ```{r, echo = F}
 influence.measures(model)
@@ -219,6 +242,11 @@ influence.measures(model)$is.inf
 ```
 
 \section{Ejercicio11}
+
+Ajuste el modelo de regresión sin las observaciones 10, 38 y 92, suponga que se establece que hay un error de digitación con estas dos observaciones, presente sólo la tabla de parámetros ajustados resultante ¿Cambian notoriamente las estimaciones de los parámetros, sus errores estándard y/o la signficancia? ¿Qué concluye al respecto? Evalúe el gráfico de normalidad para los residuales estudentizados para este ajuste ¿mejoró la normalidad?
+
+Concluya sobre los efectos de este par de observaciones.
+
 ```{r, echo = F}
 AdmissionPredict_sin_influencias <- data %>% slice(-c(10, 11, 32, 37, 53, 65, 66, 92)) 
 
@@ -235,6 +263,13 @@ legend("topleft",legend=rbind(c("Statistic W","p.value"),round(c(test_sin_influe
 
 ```
 \section{Ejercicio 12}
+
+Para el modelo con todas las variables y sin las observaciones 10, 38 y 92, realice diagnósticos de multicolinealidad mediante
+  
+  \subsection{Matriz de correlación de las variables predictoras}
+  \subsection{VIF's}
+  \subsection{Proporciones de varianza}
+
 ```{r, echo = F}
 #a.
 cor(data)
@@ -257,4 +292,14 @@ vif(modelo_sin_influencias)
 ```
 
 \section{Ejericio13}
+
+En el modelo ajustado sin las observaciones 10, 38 y 92, construya modelos de regresión utilizando los métodos de selección (muestre de cada método sólo la tabla de resumen de este y la tabla ANOVA y la de parámetros estimados del modelo finalmente resultante):
+
+  \subsection{Selección según el $R^2_{adj}$}
+  \subsection{Selección según el estadístico $C_p$}
+  \subsection{Stepwise}
+  \subsection{Selección hacia adelante o forward}
+  \subsection{Selección hacia atrás o backward}
+
 \section{Selección del modelo}
+Con base en los anteriores numerales, ¿Cuál modelo sugiere para la variable respuesta? ¿por qué?
