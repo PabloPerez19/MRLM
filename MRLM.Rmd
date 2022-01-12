@@ -84,6 +84,19 @@ geom_histogram(breaks=hist(data[,i],breaks = "FD",plot=F)$breaks,
 
 gg2
 ```
+Se puede observar en la matriz de dispersión se pueden realizar varias observaciones:
+
+\hspace{1cm}-La correlación entre la variable \textbf{GRE.Score}(Examen que tiene como finalidad medir la capacidad de razonamiento verbal, razonamiento cuantitativo, y habilidades para pensar y escribir de forma analítica) y \textbf{Chance.of.admit} (Posibilidad de ser admitido) es r = 0.808, por lo que se puede concluir que tienen una relación lineal positiva fuerte.
+
+\hspace{1cm}-Entre la variable \textbf{TOEFL.Score} (Prueba estandarizada de dominio del idioma inglés) y \textbf{Chance.of.admit} (Posibilidad de ser admitido) existe una relación lineal positiva moderada debido a que r = 0.780.
+
+\hspace{1cm}-Al igual que la anterior, entre la variable \textbf{SOP}(Ensayo de admisión o solicitud de postgrado)  y \textbf{Chance.of.admit} (Posibilidad de ser admitido) existe una relación lineal positiva moderada, en este caso debido a que r = 0.614.
+
+\hspace{1cm}-En este caso, existe una relación lineal positiva moderada entre \textbf{LOR}(Carta de recomendación) y\textbf{Chance.of.admit} (Posibilidad de ser admitido) dado que r = 0.743.
+
+\hspace{1cm}-Por último, la relación más fuerte es entre \textbf{CGPA}(Promedio general acumulado en el pregrado) y \textbf{Chance.of.admit} (Posibilidad de ser admitido) con un r = 0.833.
+
+De esta manera, podemos concluir que las variables más significativas son \textbf{CGPA} y \textbf{GRE.Score}, seguidas por \textbf{TOEFL.Score}. Sin embargo, es posible que haya problemas de multicolinealidad, ya que, existe una correlación alta entre estas 3 variables.
 
 
 \section{Modelo Ajustado de Regresion Lineal Multiple(MRLM)}
@@ -111,8 +124,13 @@ $$\widehat{Y}_i = -1.7723 + 0.0041X_{i1} + 0.0029X_{i2} - 0.0120X_{i3} + 0.0428X
 
 \subsection{Tabla Anova}
 ```{r, echo = F}
-kable(anova(rsm(Chance.of.Admit~FO(GRE.Score,TOEFL.Score,SOP,LOR,CGPA), data = data)), caption = 'Tabla ANOVA para el modelo')
+kable(anova(rsm(Chance.of.Admit~FO(GRE.Score,TOEFL.Score,SOP,LOR,CGPA), data = data)), caption = "Tabla ANOVA para el modelo")
 ```
+Pruebas de hipotesis: $H0: B1 = B2 = B3 = B4 = B5 = 0$ vs $HA:$ Algún $Bj \not=  0$ Para al menos un $j, j = 1,2,3,4,5$
+p-value = 2.2e-16 < alpha
+Hay evidencia para rechazar H0. Por lo tanto el modelo es globalmente significativo, al menos una de las
+pruebas ayuda a explicar la variabilidad de las chances de admision 
+
 \subsection{Prueba de significancia del Modelo}
 $$
 \begin{cases}
@@ -136,12 +154,12 @@ Calcule los coeficientes de regresión estandarizados y concluya acerca de cuál
 ```{r, echo = F}
 #CREANDO FUNCION PARA EXTRAER COEFICIENTES ESTIMADOS SUS IC DEL 95, VIF'S Y
 #COEFICIENTES ESTANDARIZADOS
-miscoeficientes <- function (modelo,datos){
-  coefi <- coef (modelo)
+miscoeficientes <- function (model,datos){
+  coefi <- coef (model)
   datos2 <- as.data.frame (scale(datos))
-  coef.std=c(0, coef (lm(update (formula(modelo),~.+0),datos2)))
-  limites=confint (modelo,level=0.95)
-  vifs=c (0,vif (modelo))
+  coef.std=c(0, coef (lm(update (formula(model),~.+0),datos2)))
+  limites=confint (model,level=0.95)
+  vifs=c (0,vif (model))
   resul=data.frame (Estimación=coefi,Limites=limites,Vif=vifs,Coef.Std=coef.std)
   cat("Coeficientes estimados, sus I.C, Vifs y Coeficientes estimados estandarizados","\n")
   resul
@@ -151,8 +169,9 @@ miscoeficientes <- function (modelo,datos){
 kable(miscoeficientes (model,data))
 ```
 
+Gracias a esta tabla, se puede deducir con una diferencia en el valor muy pequeña que, las variables que más aportan según el valor de sus coeficientes estandarizados son \textbf{CGPA} y \textbf{GRE.Score}, respectivamente
 
-\section{Significancia individual de los parámetros del modelo}
+\section{Significancia individual de los parámetros del model}
 Pruebe la significancia individual de cada uno de los parámetros del modelo (excepto intercepto), usando la prueba t. Establezca claramente la prueba de hipótesis y el criterio de decisión.
 \subsection{Tabla de la significancia individual de los parámetros}
 ```{r, echo = F}
@@ -209,9 +228,19 @@ $$
 \section{Ejercicio6}
 Teniendo en cuenta los resultados anteriores, realice una prueba con sumas de cuadrados extras con test lineal general; especifique claramente el modelo reducido y completo, estadístico de la prueba, su distribución, cálculo de valor P, decisión y conclusión a la luz de los datos. Justifique la hipótesis que desea probar en este numeral.
 
-\section{Ejercicio7}
+```{r, echo = F}
+kable(linearHypothesis(model, c('GRE.Score=0', 'LOR=0', 'CGPA=0')))
+```
 
+
+\section{Ejercicio7}
 Calcule las sumas de cuadrados tipo I (secuenciales) y tipo II (parciales) ¿Cuál de las variables tienen menor valor en tales sumas? ¿Qué puede significar ello?
+
+```{r, echo=F}
+kable(anova(model))
+kable(Anova(model))
+```
+
 
 \section{Residuales estudentizados vs. Valores ajustados}
 
@@ -222,6 +251,8 @@ Construya una gráfica de probabilidad normal para los residuales estudentizados
 ```{r, echo = F}
 residualPlots(model,tests=FALSE,type="rstudent",quadratic=FALSE,col=2,cex=1.5)
 ```
+
+Se puede observar 
 
 \section{Prueba de normalidad para los residuales estudentizados}
 Construya una gráfica de probabilidad normal para los residuales estudentizados. ¿Existen razones para dudar de la hipótesis de normalidad sobre los errores en este modelo?
