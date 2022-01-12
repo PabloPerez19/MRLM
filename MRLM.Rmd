@@ -127,7 +127,7 @@ $$\widehat{Y}_i = -1.7723 + 0.0041X_{i1} + 0.0029X_{i2} - 0.0120X_{i3} + 0.0428X
 kable(anova(rsm(Chance.of.Admit~FO(GRE.Score,TOEFL.Score,SOP,LOR,CGPA), data = data)), caption = "Tabla ANOVA para el modelo")
 ```
 Pruebas de hipotesis: $H0: B1 = B2 = B3 = B4 = B5 = 0$ vs $HA:$ Algún $Bj \not=  0$ Para al menos un $j, j = 1,2,3,4,5$
-p-value = 2.2e-16 < alpha
+p-value = 2.2e-16 < $\alpha$
 Hay evidencia para rechazar H0. Por lo tanto el modelo es globalmente significativo, al menos una de las
 pruebas ayuda a explicar la variabilidad de las chances de admision 
 
@@ -143,6 +143,10 @@ $$
 \subsection{Coeficiente de determinación $R^2$: proporción de la variabilidad total de la respuesta explicada por el modelo y opiniones al respecto}
 $$R^2 = \frac{\text{SSR}}{\text{SST}} = 1 - \frac{\text{SSE}}{\text{SST}}$$
 $$R^2 = \frac{2.3674478}{2.3674478+0.6744272} = `r 2.3674478/(2.3674478+0.6744272)`$$
+
+\vspace{0.5cm}
+
+El 77.83% de la variabilidad de la posibilidad de ser admitido es explicada por la relación con las variables GRE.Score, TOEFL.Score, SOP, LOR y CGPA.
 
 ```{r, echo = F}
 kable(summary(model)$r.squared, caption = "Multiple R-squared")
