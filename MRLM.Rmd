@@ -50,27 +50,29 @@ x <- select(data, -c(Chance.of.Admit))
 ```
 
 \section{Base de datos}
+<!--- punto 1 --->
 \subsection{Breve Descripción de los Datos contextualizando el problema y explicando cada una de las variables involucradas en el modelo.}
 
 La base de datos disponible en Kaggle corresponde a puntajes de admision creados para la predicción de las admisiones de posgrado en La India. 
-Cuenta con 400 observaciones y 9 variables. De las cuales se consideran los primeros 100 estudiantes y 6 variables de interes por indicación de la docente.
+Cuenta con 400 observaciones y 9 variables, de las cuales se consideran los primeros 100 estudiantes y 6 variables de interés por indicación de la docente.
 
 |**Variables**|**Descripción**|
 |-----------|-------------| 
-|**Chance.of.Admit:**| Posibilidad de ser admitido.|
-|**GRE Score:**      |Examen que tiene como finalidad medir la capacidad de razonamiento verbal, razonamiento cuantitativo, y habilidades para pensar y escribir de forma analítica.|
-|**TOEFL Score:**    |Prueba estandarizada de dominio del idioma inglés.|
-|**SOP:**            |Ensayo de admisión o solicitud de postgrado.|
-|**LOR:**            |Carta de recomendación.|
-|**CGPA:**           |Promedio general acumulado en el pregrado.| 
+|**Chance.of.Admit:**| Posibilidad de ser admitido. Variable numérica continua de 0-1.|
+|**GRE Score:**      | Puntaje de Examen que proporciona a las escuelas una medida común para la comparación de la capacidad de razonamiento verbal, razonamiento cuantitativo, y habilidades para pensar y escribir de forma analítica. Variable numérica que toma valores de 294 - 340.|
+|**TOEFL Score:**    | Puntaje en prueba estandarizada de dominio del idioma inglés. Variable numérica que toma valores del 93 - 120.|
+|**SOP:**            | Puntaje en Ensayo de admisión o solicitud de postgrado. Variable numérica que toma valores del 1 - 5, tomando el valor medio entre cada par de enteros en el intervalo.|
+|**LOR:**            | Puntaje en Carta de recomendación. Variable numérica que toma valores del 1.5 - 5, tomando el valor medio entre cada par de enteros en el intervalo.|
+|**CGPA:**           | Promedio general acumulado en el pregrado. Variable numérica que toma valores del 6.8 - 9.8.| 
 
 |**No se consideran**| **Descripción**|
 |-----------|-------------| 
-|**Serial No.**| Numero de serial que identifica a cada estudiante|
-|**University Rating** | Calificación universitaria|
-|**Research Experience**| Si tiene experiencia en investigación o no|
+|**Serial No.**| Numero de serial que identifica a cada estudiante en la base da datos dada.|
+|**University Rating** | Calificación universitaria.| <!-- de la universidad --->
+|**Research Experience**| Si tiene experiencia en investigación o no.|
 
 \section{Análisis descriptivo}
+<!--- punto 2 --->
 \subsection{Grafico de dispersión con Matriz de Correlaciones y conclusiones}
 
 ```{r, echo = F}
@@ -85,10 +87,51 @@ geom_histogram(breaks=hist(data[,i],breaks = "FD",plot=F)$breaks,
 gg2
 ```
 
+- **GRE.Score:** Es una variable numérica que toma valores enteros en [294,340], es unimodal y sesgada a izquierda, Mediana: `r summary(data$GRE.Score)[3]` y Media: `r summary(data$GRE.Score)[4]`. Las mayores correlaciones las tiene con TOEFL.Score, Chance.of.Admit, CGPA y LOR, respectivamente.
+
+- **TOEFL Score:** Es una variable numérica que toma valores enteros en [`r min(data$TOEFL.Score)`, `r max(data$TOEFL.Score)`], es unimodal y muy simétrica (levemente sesgada a izquierda), Mediana: `r summary(data$TOEFL.Score)[3]` y Media: `r summary(data$TOEFL.Score)[4]`. Las mayores correlaciones las tiene con GRE.Score, CGPA y Chance.of.Admit, respectivamente.
+
+- **SOP:** Es una variable numérica que toma valores en [`r min(data$SOP)`, `r max(data$SOP)`] tomando el valor medio entre cada par de enteros en el intervalo; es multimodal y no simétrica, Mediana: `r summary(data$SOP)[3]` y Media: `r summary(data$SOP)[4]`. La mayor correlación la tiene con CGPA con un valor de 0.652. Tiene un valor atípico en 1, como puede evidenciarse en el siguiente boxplot.
+
+```{r, echo=FALSE}
+layout(matrix(c(1, 2,
+                3, 3), nrow=2, byrow=TRUE))
+#layout.show(n=3)
+#par(mfrow = c(2,2))
+boxplot(data %>% select(c(TOEFL.Score,GRE.Score)), las = 1)
+boxplot(data %>% select(c(Chance.of.Admit)), main='Chance.of.Admit',las = 1)
+boxplot(data %>% select(-c(TOEFL.Score,GRE.Score, Chance.of.Admit)), horizontal = T, las = 1)
+```
+
+
+- **LOR:** Es una variable numérica que toma valores en [`r min(data$LOR)`, `r max(data$LOR)`] tomando el valor medio entre cada par de enteros en el intervalo. Es unimodal y no simétrica, Mediana: `r summary(data$LOR)[3]` y Media: `r summary(data$LOR)[4]`. Las mayores correlaciones las tiene con Chance.of.Admit con valor 0.743 y CGPA con valor 0.739, respectivamente.
+
+- **CGPA:** Es una variable numérica que toma valores en [`r min(data$CGPA)`, `r max(data$CGPA)`], es multimodal y no simétrica, Mediana: `r summary(data$CGPA)[3]` y Media: `r summary(data$CGPA)[4]`. Las mayores correlaciones las tiene con Chance.of.Admit, TOEFL Score y GRE.Score, respectivamente.
+
+- **Chance.of.Admit:** Es una variable numérica que toma valores en [`r min(data$Chance.of.Admit)`, `r max(data$Chance.of.Admit)`], es multimodal y no simétrica, Mediana: `r summary(data$Chance.of.Admit)[3]` y Media: `r summary(data$Chance.of.Admit)[4]`. Las mayores correlaciones las tiene con CGPA, GRE.Score y TOEFL Score, respectivamente.
+
+
+La mayor correlación se observa entre las variables GRE.Score y TOEFL.Score (0.888), seguida del par Chance.of.Admit y CGPA (0.833), TOEFL.Score y CGPA (0.812), y GRE.Score y CGPA (0.804). Lo cual es razonable debido a que a mayor habilidad con el lenguaje y el razonamiento, se pueden tener mejores resultados en las pruebas de lengua; mejores notas en pregrado se asocian a mayores posibilidades de ser admitido (generalmente en casos de empate se decide por aquel con mejor promedio). Los ultimos dos pares de variables más correlacionadas, al menos culturalmente, se asocian a características de una persona "aplicada".
+
+<!--- código Juan Sebastian--->
+```{r, echo = F, include=FALSE}
+panel.cor <- function(x, y){
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  r <- round(cor(x, y), digits=2)
+  txt <- paste0("R = ", r)
+  cex.cor <- 0.8/strwidth(txt)
+  text(0.5, 0.5, txt, cex = cex.cor * r)
+}
+pairs(data, 
+      lower.panel = panel.cor)
+```
 
 \section{Modelo Ajustado de Regresion Lineal Multiple(MRLM)}
+<!--- punto 3 --->
 ```{r, echo = F}
 model = lm(data$Chance.of.Admit~., data)
+anova(rsm(Chance.of.Admit~FO(GRE.Score,TOEFL.Score,SOP,LOR,CGPA), data)) # del codigo de juan sebastian
 summary(model) #¿ésto no debe incluirse?
 ```
 \subsection{Tabla de parámetros ajustados}
@@ -131,6 +174,7 @@ kable(summary(model)$r.squared, caption = "Multiple R-squared")
 ```
 
 \section{Coeficientes de regresión estandarizados}
+<!--- punto 4 --->
 Calcule los coeficientes de regresión estandarizados y concluya acerca de cuál de las variables aporta máss a la respuesta según la magnitud en valor absoluto de tales coeficientes (cuidado, no confunda esto con la significancia de los coeficientes de regresión)
 
 ```{r, echo = F}
@@ -153,6 +197,7 @@ kable(miscoeficientes (model,data))
 
 
 \section{Significancia individual de los parámetros del modelo}
+<!--- punto 5 --->
 Pruebe la significancia individual de cada uno de los parámetros del modelo (excepto intercepto), usando la prueba t. Establezca claramente la prueba de hipótesis y el criterio de decisión.
 \subsection{Tabla de la significancia individual de los parámetros}
 ```{r, echo = F}
@@ -207,15 +252,32 @@ H_1&: \beta_5 \neq 0
 \end{cases}
 $$
 \section{Ejercicio6}
+<!--- punto 6 --->
 Teniendo en cuenta los resultados anteriores, realice una prueba con sumas de cuadrados extras con test lineal general; especifique claramente el modelo reducido y completo, estadístico de la prueba, su distribución, cálculo de valor P, decisión y conclusión a la luz de los datos. Justifique la hipótesis que desea probar en este numeral.
 
-\section{Ejercicio7}
+```{r}
+linearHypothesis(model, c('GRE.Score=0', 'LOR=0', 'CGPA=0'))
+```
 
+
+\section{Ejercicio7}
+<!--- punto 7 --->
 Calcule las sumas de cuadrados tipo I (secuenciales) y tipo II (parciales) ¿Cuál de las variables tienen menor valor en tales sumas? ¿Qué puede significar ello?
 
-\section{Residuales estudentizados vs. Valores ajustados}
+```{r}
+anova(model) #test tipo I
+Anova(model) #test tipo II ¿Es apropiado su uso aquí? https://www.r-bloggers.com/2011/03/anova-%e2%80%93-type-iiiiii-ss-explained/
+```
 
+
+\section{Residuales estudentizados vs. Valores ajustados}
+<!--- punto 8 --->
 Construya y analice gráficos de los residuales estudentizados vs. Valores ajustados y contra las variables de regresión utilizadas. ¿Qué información proporcionan estas gráficas?
+
+```{r}
+residualPlots(model,tests=FALSE,type="rstudent",quadratic=FALSE,col=2,cex=1.5)
+```
+
 \subsection{Gráfico de los residuales estudentizados vs. Valores ajustados}
 Construya una gráfica de probabilidad normal para los residuales estudentizados. ¿Existen razones para dudar de la hipótesis de normalidad sobre los errores en este modelo?
 
@@ -224,6 +286,7 @@ residualPlots(model,tests=FALSE,type="rstudent",quadratic=FALSE,col=2,cex=1.5)
 ```
 
 \section{Prueba de normalidad para los residuales estudentizados}
+<!--- punto 9 --->
 Construya una gráfica de probabilidad normal para los residuales estudentizados. ¿Existen razones para dudar de la hipótesis de normalidad sobre los errores en este modelo?
 \subsection{Gráfico q-norm residuales estudentizados}
 ```{r, echo = F}
@@ -234,7 +297,7 @@ legend("topleft",legend=rbind(c("Statistic W","p.value"),round(c(test$statistic,
 ```
 
 \section{Diagnostico sobre la presencia de observaciones atipicas, de balanceo y/o influenciales y conclusiones}
-
+<!--- punto 10 --->
 ```{r, echo = F}
 influence.measures(model)
 influence.measures(model)$is.inf
@@ -242,7 +305,7 @@ influence.measures(model)$is.inf
 ```
 
 \section{Ejercicio11}
-
+<!--- punto 11 --->
 Ajuste el modelo de regresión sin las observaciones 10, 38 y 92, suponga que se establece que hay un error de digitación con estas dos observaciones, presente sólo la tabla de parámetros ajustados resultante ¿Cambian notoriamente las estimaciones de los parámetros, sus errores estándard y/o la signficancia? ¿Qué concluye al respecto? Evalúe el gráfico de normalidad para los residuales estudentizados para este ajuste ¿mejoró la normalidad?
 
 Concluya sobre los efectos de este par de observaciones.
@@ -262,8 +325,9 @@ qqline(rstudent(modelo_sin_influencias),col=2)
 legend("topleft",legend=rbind(c("Statistic W","p.value"),round(c(test_sin_influencias$statistic,test_sin_influencias$p.value),digits=5)),cex=0.4)
 
 ```
-\section{Ejercicio 12}
 
+\section{Ejercicio 12}
+<!--- punto 12 --->
 Para el modelo con todas las variables y sin las observaciones 10, 38 y 92, realice diagnósticos de multicolinealidad mediante
   
   \subsection{Matriz de correlación de las variables predictoras}
@@ -292,7 +356,7 @@ vif(modelo_sin_influencias)
 ```
 
 \section{Ejericio13}
-
+<!--- punto 13 --->
 En el modelo ajustado sin las observaciones 10, 38 y 92, construya modelos de regresión utilizando los métodos de selección (muestre de cada método sólo la tabla de resumen de este y la tabla ANOVA y la de parámetros estimados del modelo finalmente resultante):
 
   \subsection{Selección según el $R^2_{adj}$}
@@ -302,4 +366,5 @@ En el modelo ajustado sin las observaciones 10, 38 y 92, construya modelos de re
   \subsection{Selección hacia atrás o backward}
 
 \section{Selección del modelo}
+<!--- punto 14 --->
 Con base en los anteriores numerales, ¿Cuál modelo sugiere para la variable respuesta? ¿por qué?
